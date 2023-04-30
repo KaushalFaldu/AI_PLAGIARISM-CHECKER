@@ -1,0 +1,62 @@
+#AI project 
+===========================================
+pip install fuzzywuzzy
+from fuzzywuzzy import fuzz
+import re
+from fuzzywuzzy import fuzz
+
+---------------------------------------------
+import csv
+import string
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import PorterStemmer
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+
+codes = [] # Load the CSV file containing the codes
+with open('test_codechef_distinctcol.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        codes.append(row[0])
+
+stop_words = set(stopwords.words('english')) 
+stemmer = PorterStemmer()
+
+def preprocess(code):
+
+    code = code.translate(str.maketrans('', '', string.punctuation))     
+
+    tokens = word_tokenize(code.lower())     # Tokenize the code
+
+    filtered_tokens = [token for token in tokens if token not in stop_words]  
+
+    stemmed_tokens = [stemmer.stem(token) for token in filtered_tokens]    
+
+    preprocessed_code = ' '.join(stemmed_tokens)     
+    return preprocessed_code
+
+preprocessed_codes = [preprocess(code) for code in codes]
+
+
+vectorizer = TfidfVectorizer() # Calculate the TF-IDF vectors for the preprocessed codes
+tfidf_vectors = vectorizer.fit_transform(preprocessed_codes)
+
+
+user_code = input('Enter code: ') 
+
+
+preprocessed_user_code = preprocess(user_code) # Preprocess the user code and calculate its TF-IDF vector
+user_tfidf_vector = vectorizer.transform([preprocessed_user_code])
+
+
+similarities = cosine_similarity(user_tfidf_vector, tfidf_vectors) # Calculate the cosine similarity between the user code and each of the 50 codes
+
+
+for i, similarity in enumerate(similarities[0]):
+    if similarity > 0.8:
+        print(f"Code {i + 1} is {similarity*100}% similar to the user-entered code.")
